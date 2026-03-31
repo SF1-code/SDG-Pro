@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Математический маятник</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Математический маятник</h1>
+        <canvas id="pendulumCanvas" width="800" height="500"></canvas>
+        <div class="controls">
+            <button id="resetBtn">Сбросить</button>
+            <label>
+                Длина нити (м):
+                <input type="range" id="lengthSlider" min="0.5" max="2" step="0.01" value="1.2">
+                <span id="lengthValue">1.20</span>
+            </label>
+            <label>
+                Начальный угол (градусы):
+                <input type="range" id="angleSlider" min="-90" max="90" step="1" value="45">
+                <span id="angleValue">45</span>
+            </label>
+        </div>
+        <p class="info">Движение моделируется с учётом физики (g = 9.8 м/с²).</p>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
