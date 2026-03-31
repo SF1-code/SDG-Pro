@@ -3,27 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Математический маятник</title>
+    <title>Двойной маятник с управлением платформой</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Математический маятник</h1>
-        <canvas id="pendulumCanvas" width="800" height="500"></canvas>
+        <h1>Двойной маятник – ручная стабилизация в верхнем положении</h1>
+        <canvas id="pendulumCanvas" width="900" height="600"></canvas>
         <div class="controls">
-            <button id="resetBtn">Сбросить</button>
-            <label>
-                Длина нити (м):
-                <input type="range" id="lengthSlider" min="0.5" max="2" step="0.01" value="1.2">
-                <span id="lengthValue">1.20</span>
-            </label>
-            <label>
-                Начальный угол (градусы):
-                <input type="range" id="angleSlider" min="-90" max="90" step="1" value="45">
-                <span id="angleValue">45</span>
-            </label>
+            <div class="control-group">
+                <button id="resetUpBtn">Поставить вверх</button>
+                <button id="resetDownBtn">Опустить вниз</button>
+                <button id="stopBtn">Стоп/Пуск</button>
+            </div>
+            <div class="control-group">
+                <label>Платформа X: 
+                    <input type="range" id="platformX" min="-150" max="150" step="1" value="0">
+                    <span id="platformXVal">0</span>
+                </label>
+                <label>Длина L1: 
+                    <input type="range" id="len1" min="0.5" max="2.0" step="0.01" value="1.2">
+                    <span id="len1Val">1.20</span>
+                </label>
+                <label>Длина L2: 
+                    <input type="range" id="len2" min="0.5" max="2.0" step="0.01" value="1.2">
+                    <span id="len2Val">1.20</span>
+                </label>
+            </div>
+            <div class="control-group">
+                <label>Угол θ1: 
+                    <input type="range" id="theta1" min="-180" max="180" step="1" value="170">
+                    <span id="theta1Val">170</span>
+                </label>
+                <label>Угол θ2: 
+                    <input type="range" id="theta2" min="-180" max="180" step="1" value="10">
+                    <span id="theta2Val">10</span>
+                </label>
+            </div>
         </div>
-        <p class="info">Движение моделируется с учётом физики (g = 9.8 м/с²).</p>
+        <p class="info">Двигайте платформу мышью (за красную точку) или слайдером. Попробуйте удержать маятник в верхнем положении (оба звена направлены вверх).</p>
     </div>
     <script src="script.js"></script>
 </body>

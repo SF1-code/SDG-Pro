@@ -23,30 +23,43 @@ canvas {
     border-radius: 10px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     margin-bottom: 20px;
+    cursor: grab;
+}
+
+canvas:active {
+    cursor: grabbing;
 }
 
 .controls {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 20px;
+    flex-direction: column;
+    gap: 15px;
     margin-bottom: 15px;
 }
 
-.controls label {
+.control-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 10px;
+    border-radius: 15px;
+}
+
+.control-group label {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     background: rgba(255, 255, 255, 0.2);
-    padding: 8px 15px;
+    padding: 5px 12px;
     border-radius: 30px;
-    backdrop-filter: blur(5px);
 }
 
 button {
     background: #ff6b6b;
     border: none;
-    padding: 8px 20px;
+    padding: 6px 16px;
     border-radius: 30px;
     color: white;
     font-weight: bold;
@@ -60,12 +73,12 @@ button:hover {
 }
 
 input[type="range"] {
-    width: 150px;
+    width: 140px;
     cursor: pointer;
 }
 
 .info {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     opacity: 0.8;
     margin-top: 10px;
 }
