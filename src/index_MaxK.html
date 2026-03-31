@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fast Pendulum | Adjustable Length | Physics Simulation</title>
+    <style>
+        * {
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(145deg, #1a374d 0%, #0f2a3b 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Roboto', 'Inter', system-ui, -apple-system, 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: rgba(22, 34, 48, 0.65);
+            backdrop-filter: blur(2px);
+            border-radius: 3rem;
+            padding: 1.2rem 1.5rem 1.8rem 1.5rem;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .canvas-container {
+            background: #fef9e8;
+            border-radius: 2rem;
+            padding: 12px;
+            box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08), 0 12px 28px rgba(0,0,0,0.3);
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 1.2rem;
+            cursor: grab;
+            background: #fffef7;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.2s;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        .controls {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.7rem;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 0.5rem 1rem;
+            border-radius: 3rem;
+            backdrop-filter: blur(4px);
+        }
+
+        button {
+            background: #e3eaf0;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding: 0.5rem 1.2rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            color: #1e2f3a;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            letter-spacing: 0.3px;
+        }
+
+        button:active {
+            transform: scale(0.96);
+            background: #cbdbe0;
+        }
+
+        .slider-panel {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 0.4rem 1.2rem;
+            border-radius: 2.5rem;
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+
+        .slider-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #f0ede8;
+            font-weight: 500;
+            text-shadow: 0 1px 1px black;
+            font-size: 0.85rem;
+        }
+
+        input {
+            cursor: pointer;
+            width: 160px;
+            accent-color: #ffb347;
+        }
+
+        .value-display {
+            background: #0f212e;
+            padding: 0.2rem 0.7rem;
+            border-radius: 2rem;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: #ffdd99;
+            min-width: 55px;
+            text-align: center;
+        }
+
+        .info {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.75rem;
+            color: #cddde9;
+            font-weight: 500;
+            background: rgba(0,0,0,0.3);
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
+            backdrop-filter: blur(4px);
+        }
+
+        .speed-badge {
+            background: #ff884d;
+            color: #1e2f3a;
+            padding: 0.2rem 0.6rem;
+            border-radius: 1rem;
+            font-weight: bold;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+        }
+
+        @media (max-width: 720px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .btn-group {
+                justify-content: center;
+            }
+            .slider-panel {
+                justify-content: center;
+                gap: 1rem;
+            }
+            .value-display {
+                min-width: 45px;
+            }
+            input {
+                width: 130px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div class="card">
+        <div class="canvas-container">
+            <canvas id="pendulumCanvas" width="800" height="500" style="width:100%; height:auto; max-width:800px; aspect-ratio:800/500"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="btn-group">
+                <button id="resetBtn" aria-label="reset">⟳ Reset</button>
+                <button id="stopBtn" aria-label="stop/pause">⏸ Pause</button>
+                <button id="startBtn" aria-label="start/resume">▶ Start</button>
+            </div>
+            <div class="slider-panel">
+                <div class="slider-label">
+                    <span>⚡ Speed Factor</span>
+                    <input type="range" id="speedSlider" min="0.5" max="3.0" step="0.05" value="1.8">
+                    <span id="speedVal" class="value-display">1.80x</span>
+                </div>
+                <div class="slider-label">
+                    <span>📏 Length (pixels)</span>
+                    <input type="range" id="lengthSlider" min="80" max="380" step="2" value="180">
+                    <span id="lengthVal" class="value-display">180 px</span>
+                </div>
+                <div class="slider-label">
+                    <span>🔄 Damping</span>
+                    <input type="range" id="dampingSlider" min="0" max="0.03" step="0.0005" value="0.003">
+                    <span id="dampingVal" class="value-display">0.0030</span>
+                </div>
+            </div>
+        </div>
+        <div class="info">
+            🚀 <strong>FASTER PENDULUM</strong> | Adjust length in real-time | Drag the bob | Speed factor increases swing rate
+            <span class="speed-badge">⚡ High speed mode</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        // ----- DOM elements -----
+        const canvas = document.getElementById('pendulumCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // sliders & displays
+        const speedSlider = document.getElementById('speedSlider');
+        const speedVal = document.getElementById('speedVal');
+        const lengthSlider = document.getElementById('lengthSlider');
+        const lengthVal = document.getElementById('lengthVal');
+        const dampingSlider = document.getElementById('dampingSlider');
+        const dampingVal = document.getElementById('dampingVal');
+
+        // buttons
+        const resetBtn = document.getElementById('resetBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const startBtn = document.getElementById('startBtn');
+
+        // ----- simulation parameters -----
+        let baseGravity = 12.8;      // HIGHER gravity = FASTER swing (increased from 5.2 to 12.8)
+        let speedMultiplier = 1.8;    // Additional speed multiplier (default 1.8x)
+        let effectiveGravity = baseGravity * speedMultiplier; // Final gravity used in physics
+        
+        let length = 180;              // pendulum arm length in pixels (shorter = faster)
+        let damping = 0.003;          // air resistance / damping factor per frame
+        
+        // pendulum state
+        let angle = Math.PI / 6;       // initial 30 degrees (≈0.5236 rad)
+        let angularVelocity = 0.0;
+        let angularAcceleration = 0.0;
+        
+        // simulation running flag
+        let isSimulating = true;
+        
+        // drag interaction flags
+        let isDragging = false;
+        
+        // anchor point (fixed top center)
+        let pivotX = 400;
+        let pivotY = 65;
+        
+        // delta time tracking
+        let lastFrameTime = performance.now();
+        
+        // ---- helper functions ----
+        function updateSliderReadouts() {
+            speedVal.innerText = speedMultiplier.toFixed(2) + "x";
+            lengthVal.innerText = Math.round(length) + " px";
+            dampingVal.innerText = damping.toFixed(4);
+            updateEffectiveGravity();
+        }
+        
+        function updateEffectiveGravity() {
+            effectiveGravity = baseGravity * speedMultiplier;
+        }
+        
+        // apply values from UI
+        function syncFromUI() {
+            speedMultiplier = parseFloat(speedSlider.value);
+            length = parseFloat(lengthSlider.value);
+            damping = parseFloat(dampingSlider.value);
+            updateEffectiveGravity();
+            updateSliderReadouts();
+        }
+        
+        // reset to classic state: angle = 30° from vertical, zero velocity
+        function resetPendulum() {
+            angle = Math.PI / 6;
+            angularVelocity = 0;
+            angularAcceleration = 0;
+            isSimulating = true;
+            window._userDesiredSim = true;
+            drawPendulum();
+        }
+        
+        function pauseSimulation() {
+            isSimulating = false;
+            window._userDesiredSim = false;
+        }
+        
+        function startSimulation() {
+            isSimulating = true;
+            window._userDesiredSim = true;
+        }
+        
+        // physics update using Euler integration with delta time (seconds)
+        // FASTER because higher effectiveGravity and adjustable length
+        function updatePhysics(deltaSec) {
+            if (!isSimulating) return;
+            if (deltaSec > 0.033) deltaSec = 0.033;
+            
+            // Pendulum equation: angular acceleration = -(g / L) * sin(angle) - damping * velocity
+            // Using effectiveGravity (baseGravity * speedMultiplier) for faster swings
+            const gravityEffect = (effectiveGravity / length) * Math.sin(angle);
+            angularAcceleration = -gravityEffect - (damping * angularVelocity);
+            
+            // Euler integration
+            angularVelocity += angularAcceleration * deltaSec;
+            angle += angularVelocity * deltaSec;
+        }
+        
+        // ----- Drawing routines (beautiful pendulum with length variability) -----
+        function drawPendulum() {
+            if (!canvas) return;
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            // update pivot based on current canvas width
+            pivotX = w / 2;
+            pivotY = 58;
+            
+            // clamp length to avoid going out of canvas
+            const maxAllowedLength = Math.min(length, pivotY + h - 70);
+            const actualLength = Math.min(length, maxAllowedLength);
+            
+            // compute bob position using current angle (angle 0 = straight down)
+            const bobX = pivotX + actualLength * Math.sin(angle);
+            const bobY = pivotY + actualLength * Math.cos(angle);
+            
+            // clear canvas with warm background
+            ctx.clearRect(0, 0, w, h);
+            
+            // gradient background
+            const gradBack = ctx.createLinearGradient(0, 0, 0, h);
+            gradBack.addColorStop(0, "#fef2df");
+            gradBack.addColorStop(1, "#fff5e9");
+            ctx.fillStyle = gradBack;
+            ctx.fillRect(0, 0, w, h);
+            
+            // --- wooden ceiling mount ---
+            ctx.fillStyle = "#c7a46b";
+            ctx.shadowBlur = 0;
+            ctx.fillRect(pivotX - 30, pivotY - 12, 60, 22);
+            ctx.fillStyle = "#b58b4a";
+            ctx.fillRect(pivotX - 26, pivotY - 10, 52, 18);
+            for(let i = -22; i <= 22; i+=8) {
+                ctx.beginPath();
+                ctx.moveTo(pivotX + i, pivotY-6);
+                ctx.lineTo(pivotX + i+3, pivotY+2);
+                ctx.lineTo(pivotX + i-3, pivotY+2);
+                ctx.fillStyle = "#8b5e2c";
+                ctx.fill();
+            }
+            
+            // --- metal pivot hook ---
+            ctx.beginPath();
+            ctx.arc(pivotX, pivotY, 9, 0, 2*Math.PI);
+            ctx.fillStyle = "#4a5b66";
+            ctx.shadowColor = "rgba(0,0,0,0.3)";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(pivotX, pivotY, 6, 0, 2*Math.PI);
+            ctx.fillStyle = "#e0e9f0";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(pivotX, pivotY, 3, 0, 2*Math.PI);
+            ctx.fillStyle = "#9aaebf";
+            ctx.fill();
+            
+            // --- draw string/rope (thickness varies slightly with length) ---
+            ctx.beginPath();
+            ctx.moveTo(pivotX, pivotY);
+            ctx.lineTo(bobX, bobY);
+            ctx.lineWidth = Math.min(4, 2.5 + (actualLength / 300));
+            ctx.strokeStyle = "#7a5a4b";
+            ctx.shadowBlur = 1;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(pivotX, pivotY);
+            ctx.lineTo(bobX, bobY);
+            ctx.lineWidth = 1.8;
+            ctx.strokeStyle = "#c9aa7b";
+            ctx.stroke();
+            
+            // --- metallic bob with copper/wood finish ---
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = "rgba(0,0,0,0.25)";
+            const gradBob = ctx.createRadialGradient(bobX-6, bobY-6, 5, bobX, bobY, 24);
+            gradBob.addColorStop(0, "#cb9e6b");
+            gradBob.addColorStop(0.6, "#9c6e3e");
+            gradBob.addColorStop(1, "#73582e");
+            ctx.beginPath();
+            ctx.arc(bobX, bobY, 22, 0, 2*Math.PI);
+            ctx.fillStyle = gradBob;
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(bobX, bobY, 18, 0, 2*Math.PI);
+            ctx.fillStyle = "#dbb06c";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(bobX-3, bobY-3, 5, 0, 2*Math.PI);
+            ctx.fillStyle = "#ffe9b0";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(bobX-6, bobY-7, 2.2, 0, 2*Math.PI);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.arc(bobX, bobY, 24, 0, 2*Math.PI);
+            ctx.strokeStyle = "#c29a5e";
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            
+            // --- faint swing path arc ---
+            ctx.beginPath();
+            ctx.arc(pivotX, pivotY, actualLength, 0.5, Math.PI - 0.5, false);
+            ctx.strokeStyle = "#e9dbbd";
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([6, 8]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // --- dynamic info display ---
+            ctx.font = "bold 14px 'Segoe UI', monospace";
+            ctx.fillStyle = "#2f4858";
+            ctx.shadowBlur = 0;
+            const angleDeg = (angle * 180 / Math.PI).toFixed(1);
+            ctx.fillText(`θ = ${angleDeg}°  |  ω = ${angularVelocity.toFixed(2)} rad/s`, 18, 38);
+            
+            ctx.font = "500 12px system-ui";
+            ctx.fillStyle = "#466b7c";
+            const period = (2 * Math.PI * Math.sqrt(length / effectiveGravity)).toFixed(2);
+            ctx.fillText(`Length: ${Math.round(actualLength)}px  |  Period ≈ ${period} s  |  Speed: ${speedMultiplier.toFixed(2)}x`, 18, 62);
+            
+            // length indicator bar (visual feedback)
+            ctx.fillStyle = "#d9c5a7";
+            ctx.fillRect(18, 78, 120, 8);
+            ctx.fillStyle = "#ffaa55";
+            const lengthPercent = (actualLength - 80) / 300;
+            ctx.fillRect(18, 78, Math.min(120, Math.max(0, 120 * lengthPercent)), 8);
+            ctx.fillStyle = "#6b4c2c";
+            ctx.font = "10px monospace";
+            ctx.fillText("Length", 18, 76);
+            
+            // if paused indicator
+            if (!isSimulating && !isDragging) {
+                ctx.font = "bold 20px 'Segoe UI'";
+                ctx.fillStyle = "#000000aa";
+                ctx.fillText("⏸ PAUSED", pivotX - 45, pivotY + 80);
+            }
+            
+            // speed badge on canvas
+            ctx.font = "bold 11px monospace";
+            ctx.fillStyle = "#ff8844";
+            ctx.fillText("⚡ FAST MODE", w - 85, 30);
+        }
+        
+        // ----- drag interaction -----
+        function getMouseAngleFromPivot(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const canvasX = (clientX - rect.left) * scaleX;
+            const canvasY = (clientY - rect.top) * scaleY;
+            
+            const dx = canvasX - pivotX;
+            const dy = canvasY - pivotY;
+            let rawAngle = Math.atan2(dx, dy);
+            return rawAngle;
+        }
+        
+        function startDrag(e) {
+            e.preventDefault();
+            let clientX, clientY;
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            const newAngle = getMouseAngleFromPivot(clientX, clientY);
+            if (newAngle !== undefined && !isNaN(newAngle)) {
+                isDragging = true;
+                // clamp angle for better usability but still allow wide range
+                let clamped = Math.min(Math.max(newAngle, -2.8), 2.8);
+                angle = clamped;
+                angularVelocity = 0;
+                isSimulating = false;
+                drawPendulum();
+            }
+        }
+        
+        function onDrag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            let clientX, clientY;
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            const newAngle = getMouseAngleFromPivot(clientX, clientY);
+            if (newAngle !== undefined && !isNaN(newAngle)) {
+                let clamped = Math.min(Math.max(newAngle, -2.8), 2.8);
+                angle = clamped;
+                angularVelocity = 0;
+                drawPendulum();
+            }
+        }
+        
+        function endDrag(e) {
+            if (!isDragging) return;
+            isDragging = false;
+            isSimulating = window._userDesiredSim;
+            drawPendulum();
+        }
+        
+        // global user desired simulation flag
+        window._userDesiredSim = true;
+        
+        function setUserSimState(state) {
+            window._userDesiredSim = state;
+            if (!isDragging) {
+                isSimulating = state;
+            }
+        }
+        
+        // ---- animation loop with delta time ----
+        let animFrameId = null;
+        function animate() {
+            const now = performance.now();
+            let delta = Math.min(0.033, (now - lastFrameTime) / 1000);
+            if (delta <= 0 || delta > 0.05) delta = 1/60;
+            lastFrameTime = now;
+            
+            // update physics only if not dragging & simulation active
+            if (!isDragging && isSimulating) {
+                updatePhysics(delta);
+            }
+            
+            drawPendulum();
+            animFrameId = requestAnimationFrame(animate);
+        }
+        
+        // ---- attach drag events ----
+        function attachDragEvents() {
+            canvas.addEventListener('mousedown', startDrag);
+            window.addEventListener('mousemove', onDrag);
+            window.addEventListener('mouseup', endDrag);
+            
+            canvas.addEventListener('touchstart', startDrag, {passive: false});
+            window.addEventListener('touchmove', onDrag, {passive: false});
+            window.addEventListener('touchend', endDrag);
+        }
+        
+        // resize handler
+        function resizeCanvasAndRedraw() {
+            canvas.width = 800;
+            canvas.height = 500;
+            pivotX = canvas.width / 2;
+            pivotY = 58;
+            drawPendulum();
+        }
+        
+        // UI event handlers with REAL-TIME length variability
+        function setupUI() {
+            speedSlider.addEventListener('input', (e) => {
+                speedMultiplier = parseFloat(e.target.value);
+                updateEffectiveGravity();
+                speedVal.innerText = speedMultiplier.toFixed(2) + "x";
+                if(!isDragging) drawPendulum();
+            });
+            
+            lengthSlider.addEventListener('input', (e) => {
+                length = parseFloat(e.target.value);
+                lengthVal.innerText = Math.round(length) + " px";
+                if(!isDragging) drawPendulum();
+            });
+            
+            dampingSlider.addEventListener('input', (e) => {
+                damping = parseFloat(e.target.value);
+                dampingVal.innerText = damping.toFixed(4);
+                if(!isDragging) drawPendulum();
+            });
+            
+            resetBtn.addEventListener('click', () => {
+                resetPendulum();
+                if(!isDragging) {
+                    isSimulating = window._userDesiredSim;
+                }
+                drawPendulum();
+            });
+            
+            stopBtn.addEventListener('click', () => {
+                setUserSimState(false);
+                if(!isDragging) isSimulating = false;
+                drawPendulum();
+            });
+            
+            startBtn.addEventListener('click', () => {
+                setUserSimState(true);
+                if(!isDragging) isSimulating = true;
+                drawPendulum();
+            });
+        }
+        
+        function init() {
+            resizeCanvasAndRedraw();
+            setupUI();
+            attachDragEvents();
+            syncFromUI();
+            resetPendulum();
+            window._userDesiredSim = true;
+            isSimulating = true;
+            lastFrameTime = performance.now();
+            animate();
+            window.addEventListener('resize', () => {
+                resizeCanvasAndRedraw();
+                drawPendulum();
+            });
+        }
+        
+        init();
+    })();
+</script>
+</body>
+</html>
