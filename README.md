@@ -1,5 +1,9 @@
 # SDG-Pro
-Learning 
+Team members:
+pervo1may - v.emelianov
+
+
+Learning
 
 <<<<<<< HEAD
 Hello STD!!
