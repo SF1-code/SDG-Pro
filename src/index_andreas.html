@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Simple Pendulum</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      color: #1f2937;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .panel {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 24px;
+    }
+    p.note {
+      margin-top: 0;
+      color: #4b5563;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    .control-group {
+      margin-bottom: 22px;
+    }
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    .value-box {
+      font-weight: 700;
+      color: #111827;
+      background: #eef2ff;
+      padding: 4px 10px;
+      border-radius: 999px;
+      min-width: 78px;
+      text-align: center;
+      font-size: 14px;
+    }
+    input[type="range"] {
+      width: 100%;
+      cursor: pointer;
+    }
+    .buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+    }
+    button.secondary {
+      background: #6b7280;
+    }
+    .readout {
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 12px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background: linear-gradient(to bottom, #f8fbff, #eef5ff);
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    .canvas-wrap {
+      min-height: 620px;
+    }
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+      .canvas-wrap {
+        min-height: 460px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="panel">
+      <h1>Simple Pendulum</h1>
+      <p class="note">
+        Adjust the initial conditions using the sliders. The pendulum updates immediately,
+        and you can start or pause the motion at any time.
+      </p>
+
+      <div class="control-group">
+        <div class="label-row">
+          <label for="mass">Mass</label>
+          <div class="value-box" id="massValue">1.0 kg</div>
+        </div>
+        <input type="range" id="mass" min="0.1" max="10" step="0.1" value="1.0" />
+      </div>
+
+      <div class="control-group">
+        <div class="label-row">
+          <label for="length">Length</label>
+          <div class="value-box" id="lengthValue">1.0 m</div>
+        </div>
+        <input type="range" id="length" min="0.2" max="5" step="0.1" value="1.0" />
+      </div>
+
+      <div class="control-group">
+        <div class="label-row">
+          <label for="angle">Initial Angle</label>
+          <div class="value-box" id="angleValue">30°</div>
+        </div>
+        <input type="range" id="angle" min="-90" max="90" step="1" value="30" />
+      </div>
+
+      <div class="buttons">
+        <button id="toggleBtn">Start</button>
+        <button class="secondary" id="resetBtn">Reset</button>
+      </div>
+
+      <div class="readout">
+        <div><strong>Gravity:</strong> 9.81 m/s²</div>
+        <div><strong>Approx. Period:</strong> <span id="periodValue">2.01 s</span></div>
+        <div><strong>Current Angle:</strong> <span id="currentAngleValue">30.0°</span></div>
+      </div>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="pendulumCanvas"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('pendulumCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const massSlider = document.getElementById('mass');
+    const lengthSlider = document.getElementById('length');
+    const angleSlider = document.getElementById('angle');
+
+    const massValue = document.getElementById('massValue');
+    const lengthValue = document.getElementById('lengthValue');
+    const angleValue = document.getElementById('angleValue');
+    const currentAngleValue = document.getElementById('currentAngleValue');
+    const periodValue = document.getElementById('periodValue');
+
+    const toggleBtn = document.getElementById('toggleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const g = 9.81;
+    let isRunning = false;
+    let lastTime = 0;
+
+    let state = {
+      mass: parseFloat(massSlider.value),
+      length: parseFloat(lengthSlider.value),
+      theta: degToRad(parseFloat(angleSlider.value)),
+      omega: 0,
+      initialTheta: degToRad(parseFloat(angleSlider.value))
+    };
+
+    function degToRad(deg) {
+      return deg * Math.PI / 180;
+    }
+
+    function radToDeg(rad) {
+      return rad * 180 / Math.PI;
+    }
+
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+      draw();
+    }
+
+    function updateLabels() {
+      state.mass = parseFloat(massSlider.value);
+      state.length = parseFloat(lengthSlider.value);
+
+      massValue.textContent = `${state.mass.toFixed(1)} kg`;
+      lengthValue.textContent = `${state.length.toFixed(1)} m`;
+      angleValue.textContent = `${parseFloat(angleSlider.value).toFixed(0)}°`;
+
+      const T = 2 * Math.PI * Math.sqrt(state.length / g);
+      periodValue.textContent = `${T.toFixed(2)} s`;
+      currentAngleValue.textContent = `${radToDeg(state.theta).toFixed(1)}°`;
+    }
+
+    function resetPendulum() {
+      state.mass = parseFloat(massSlider.value);
+      state.length = parseFloat(lengthSlider.value);
+      state.initialTheta = degToRad(parseFloat(angleSlider.value));
+      state.theta = state.initialTheta;
+      state.omega = 0;
+      updateLabels();
+      draw();
+    }
+
+    function onSliderChange() {
+      if (!isRunning) {
+        resetPendulum();
+      } else {
+        state.mass = parseFloat(massSlider.value);
+        state.length = parseFloat(lengthSlider.value);
+        updateLabels();
+      }
+    }
+
+    massSlider.addEventListener('input', onSliderChange);
+    lengthSlider.addEventListener('input', onSliderChange);
+    angleSlider.addEventListener('input', onSliderChange);
+
+    toggleBtn.addEventListener('click', () => {
+      isRunning = !isRunning;
+      toggleBtn.textContent = isRunning ? 'Pause' : 'Start';
+      if (isRunning) {
+        lastTime = performance.now();
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      isRunning = false;
+      toggleBtn.textContent = 'Start';
+      resetPendulum();
+    });
+
+    function step(dt) {
+      const alpha = -(g / state.length) * Math.sin(state.theta);
+      state.omega += alpha * dt;
+      state.theta += state.omega * dt;
+    }
+
+    function draw() {
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      ctx.clearRect(0, 0, width, height);
+
+      const pivotX = width / 2;
+      const pivotY = 80;
+      const maxRodPixels = Math.min(height * 0.6, 320);
+      const rodLength = (state.length / 5) * maxRodPixels + 40;
+      const bobRadius = 12 + state.mass * 2.8;
+
+      const bobX = pivotX + rodLength * Math.sin(state.theta);
+      const bobY = pivotY + rodLength * Math.cos(state.theta);
+
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(pivotX - 70, pivotY);
+      ctx.lineTo(pivotX + 70, pivotY);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#1d4ed8';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(pivotX, pivotY);
+      ctx.lineTo(bobX, bobY);
+      ctx.stroke();
+
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.arc(pivotX, pivotY, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#2563eb';
+      ctx.beginPath();
+      ctx.arc(bobX, bobY, bobRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(37, 99, 235, 0.18)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(pivotX, pivotY, rodLength, Math.PI / 2 - 1.2, Math.PI / 2 + 1.2);
+      ctx.stroke();
+
+      ctx.fillStyle = '#374151';
+      ctx.font = '14px Arial';
+      ctx.fillText(`Length: ${state.length.toFixed(1)} m`, 20, height - 48);
+      ctx.fillText(`Mass: ${state.mass.toFixed(1)} kg`, 20, height - 28);
+      ctx.fillText(`Angle: ${radToDeg(state.theta).toFixed(1)}°`, width - 120, height - 28);
+
+      currentAngleValue.textContent = `${radToDeg(state.theta).toFixed(1)}°`;
+    }
+
+    function animate(timestamp) {
+      if (isRunning) {
+        const dt = Math.min((timestamp - lastTime) / 1000, 0.02);
+        lastTime = timestamp;
+        step(dt);
+        updateLabels();
+      }
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    updateLabels();
+    resetPendulum();
+    resizeCanvas();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
